@@ -17,12 +17,11 @@ export const config: Config = {
       serviceWorker: null, // disable service workers
       copy: [
         { src: "pages", keepDirStructure: false },
-        // No need to copy the themes from the npm package, if the CDN is used.
-        // {
-        //   src: dirname(require.resolve("@coveo/atomic/themes/coveo.css",)),
-        //   dest: "atomic/themes",
-        //   keepDirStructure: false,
-        // },
+        {
+          src: dirname(require.resolve("@coveo/atomic/themes/coveo.css",)),
+          dest: "atomic/themes",
+          keepDirStructure: false,
+        },
       ],
     },
     {
@@ -50,7 +49,7 @@ export const config: Config = {
       html({
         include: 'src/components/**/*.html',
       }),
-      coveoCdnResolve(), // Replace by `coveoNpmResolve()` to bundle Atomic & Headless and that the CDN is not used.
+      coveoNpmResolve(), // Replace by `coveoNpmResolve()` to bundle Atomic & Headless and that the CDN is not used.
     ],
     after: [nodePolyfills()],
   },
