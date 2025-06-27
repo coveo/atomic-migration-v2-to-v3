@@ -1,8 +1,10 @@
+import { spawnSync } from "node:child_process";
 import { Config } from "@stencil/core";
 import dotenvPlugin from "rollup-plugin-dotenv";
 import html from "rollup-plugin-html";
 import replace from "@rollup/plugin-replace";
-
+import nodePolyfills from 'rollup-plugin-node-polyfills';
+import { dirname } from "node:path";
 // https://stenciljs.com/docs/config
 
 export const config: Config = {
@@ -15,31 +17,17 @@ export const config: Config = {
       serviceWorker: null, // disable service workers
       copy: [
         { src: "pages", keepDirStructure: false },
-        {
-          src: "../node_modules/@coveo/atomic/dist/atomic",
-          dest: "atomic",
-          keepDirStructure: false,
-        },
-        {
-          src: "../node_modules/@coveo/headless/dist/browser",
-          dest: "headless",
-          keepDirStructure: false,
-        },
+        // No need to copy the themes from the npm package, if the CDN is used.
+        // {
+        //   src: dirname(require.resolve("@coveo/atomic/themes/coveo.css",)),
+        //   dest: "atomic/themes",
+        //   keepDirStructure: false,
+        // },
       ],
     },
     {
       type: "dist",
     },
-    {
-      type: "dist-custom-elements-bundle",
-      minify: false,
-      includeGlobalScripts: true,
-      externalRuntime: false,
-      inlineDynamicImports: false,
-      dir: "dist/components",
-    },
-    /*
-    If migrating to Stencil v3, the "dist-custom-elements-bundle" output target should be replaced by the following:
     {
       type: "dist-custom-elements",
       customElementsExportBehavior: "bundle",
@@ -48,7 +36,6 @@ export const config: Config = {
       generateTypeDeclarations: false,
       externalRuntime: false,
     },
-    */
   ],
   plugins: [
     dotenvPlugin(),
@@ -61,8 +48,56 @@ export const config: Config = {
   rollupPlugins: {
     before: [
       html({
-        include: "src/components/**/*.html",
+        include: 'src/components/**/*.html',
       }),
+      coveoCdnResolve(), // Replace by `coveoNpmResolve()` to bundle Atomic & Headless and that the CDN is not used.
     ],
+    after: [nodePolyfills()],
   },
 };
+
+
+function coveoCdnResolve() {
+  return {
+    resolveId(source: string, importer: string) {
+      if (source === '@coveo/atomic/loader') {
+        return { id: 'https://static.cloud.coveo.com/atomic/v3/index.js', external: true };
+      }
+      if (source.startsWith('@coveo/atomic/themes')) {
+        return { id: source.replace('@coveo/atomic/themes', "https://static.cloud.coveo.com/atomic/v3/themes"), external: true };
+      }
+      if (source === '@coveo/atomic') {
+        return { id: 'https://static.cloud.coveo.com/atomic/v3/index.esm.js', external: true };
+      }
+      if(source === "@coveo/headless") {
+        return { id: 'https://static.cloud.coveo.com/headless/v3/headless.esm.js', external: true };
+      }
+    },
+  };
+}
+
+function coveoNpmResolve() {
+  return {
+    resolveId(source: string, importer: string) {
+      if (source.startsWith('@coveo')) {
+        return nodeResolve(source, importer, ['browser', 'default', 'import']);
+      }
+    },
+  };
+}
+
+function nodeResolve(
+  source: string,
+  importer: string,
+  conditions: string[] = []
+) {
+  return spawnSync(
+    process.argv[0],
+    [
+      ...conditions.flatMap((condition) => ['-C', condition]),
+      '-p',
+      `require.resolve('${source}')`,
+    ],
+    { encoding: 'utf-8' }
+  ).stdout.trim();
+}

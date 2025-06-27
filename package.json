@@ -14,9 +14,9 @@
     "deploy": "npm run build && coveo ui:deploy"
   },
   "dependencies": {
-    "@coveo/atomic": "2.56.0",
-    "@coveo/headless": "2.48.0",
-    "@stencil/core": "2.22.3"
+    "@coveo/atomic": "3.27.3",
+    "@coveo/headless": "3.27.0",
+    "@stencil/core": "4.20.0"
   },
   "devDependencies": {
     "@rollup/plugin-replace": "5.0.2",
@@ -24,6 +24,7 @@
     "gts": "3.1.1",
     "prettier": "2.8.8",
     "rollup-plugin-dotenv": "0.4.1",
-    "rollup-plugin-html": "0.2.1"
+    "rollup-plugin-html": "0.2.1",
+    "rollup-plugin-node-polyfills": "^0.2.1"
   }
 }
